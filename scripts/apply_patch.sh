@@ -3,7 +3,7 @@
 PATCHES="${1:-meson64-current}"
 for folder in "../armbian-build/patch/kernel/$PATCHES/" "../userpatches/kernel/$PATCHES/"; do
     ERR_PATCH=""
-    for i in `ls $folder`; do
+    for i in `ls $folder 2>/dev/null`; do
         git apply --check "${folder}$i" 2>/dev/null
         if [ $? != "0" ]; then
             ERR_PATCH="$ERR_PATCH $i"

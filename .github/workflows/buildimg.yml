@@ -20,9 +20,14 @@ on:
         type: string
       branch:
         description: 'armbian build branch'
-        default: 'v23.02'
+        default: 'v23.11'
         required: true
         type: string
+      userkpatch:
+        description: 'armbian build use user kernel patch'
+        default: false
+        required: true
+        type: boolean
 
 env:
   TZ: Asia/Shanghai
@@ -59,44 +64,98 @@ jobs:
       run: |
         git clone -b ${{ github.event.inputs.branch }} --depth=1 https://github.com/armbian/build.git armbian-build
         cp -rf userpatches armbian-build/
-        cd armbian-build
-        bash ../scripts/modify_armbian.sh
+        cd armbian-build && bash ../scripts/modify_armbian.sh
+
+    - name: Remove userpatches kernel patch
+      if: ${{ github.event.inputs.userkpatch == 'false' }}
+      run: |
+        for i in `find armbian-build/userpatches -name '*.patch' 2>/dev/null`; do
+          if [ "$(basename $i)" = "zzzzz-0000-do-nothing.patch" ]; then
+            continue
+          fi
+          rm -f "$i"
+          echo -e "Remove User Patch [ \033[32m $i \033[0m ]"
+        done
 
     - name: Build Armbian
       id: build
       run: |
         cd armbian-build
-        sudo ./compile.sh odroidc2 BOARD="${{ github.event.inputs.board }}" RELEASE="${{ github.event.inputs.release }}" EXTRAWIFI=yes
+        ./compile.sh odroidc2 BOARD="${{ github.event.inputs.board }}" RELEASE="${{ github.event.inputs.release }}" EXTRAWIFI=yes
 
-    - name: Copy Files
+    - name: Copy Build Files
       run: |
         cd armbian-build
+        # tar zcf /workdir/Armbian_${{ github.event.inputs.branch }}_${{ github.event.inputs.board }}_${{ github.event.inputs.release }}.tar.gz output/debs output/images
+
+        echo "Copy deb img files!"
         for f_name in "*.deb" "*.img" "*.img.sha" "*.img.txt"; do
           for i in `find output/ -name "$f_name" 2>/dev/null`; do
             if [ -f "$i" ]; then
+              echo "Copy [ $i ]"
               cp "$i" /workdir
             fi
           done
         done
+
+        for i in `find /workdir/ -name "*.img"`; do
+          if [ -f "$i" ]; then
+            echo "Compression [ $i ]"
+            xz -z "$i"
+          fi
+        done
+
         build_file=$(find /workdir -type f 2>/dev/null | wc -l)
         if [ "$build_file" -eq "0" ]; then
           echo "no build files !"
           exit 1
-        else
-          echo "status=success" >> ${GITHUB_OUTPUT}
         fi
+
+    - name: Copy Kernel Source
+      env:
+        CROSS_COMPILE: "aarch64-linux-gnu-"
+        ARCH: "arm64"
+      run: |
+        cd armbian-build
+        [ -d "cache/sources/linux-kernel-worktree/" ] || exit 0
+        cd cache/sources
+
+        kconfig="$(find linux-kernel-worktree/ -name .config 2>/dev/null)"
+        [ "$kconfig" != "" ] || exit 0
+
+        kversion="$(grep '# Linux/arm64' $kconfig | cut -d ' ' -f 3)"
+        echo "Kernel Version [ $kversion ]"
+        echo "ARMBIAN_KERNEL_VERSION=$kversion" >> $GITHUB_ENV
+
+        cd `dirname "$kconfig"`
+        sudo make clean
+        cd - >/dev/null 2>&1
+
+        echo "Compression Kernel Source [ linux_source_${{ github.event.inputs.branch }}_v${kversion}.tar.gz ]"
+        tar zcf "/workdir/linux_source_${{ github.event.inputs.branch }}_v${kversion}.tar.gz" linux-kernel-worktree
 
     - name:  Upload Artifact
       uses: actions/upload-artifact@v4.1.0
-      if: ${{steps.build.outputs.status}} == 'success' && !cancelled()
       with:
         name: output
         path: /workdir/*
 
+    - name: Upload file to Release (no user patch)
+      uses: ncipollo/release-action@main
+      if: ${{ github.event.inputs.userkpatch == 'false' }}
+      with:
+        tag: Armbian_${{ github.event.inputs.branch }}_v${{ env.ARMBIAN_KERNEL_VERSION }}_${{ github.event.inputs.board }}_${{ github.event.inputs.release }}
+        artifacts: /workdir/*
+        allowUpdates: true
+        token: ${{ secrets.GH_TOKEN }}
+        body: |
+          This is Armbian dtb image (no user patch)
+
     - name: Upload file to Release
       uses: ncipollo/release-action@main
+      if: ${{ github.event.inputs.userkpatch == 'true' }}
       with:
-        tag: Armbian_${{ github.event.inputs.branch }}_${{ github.event.inputs.board }}_${{ github.event.inputs.release }}_${{ env.COMPILE_STARTINGTIME }}
+        tag: Armbian_${{ github.event.inputs.branch }}_v${{ env.ARMBIAN_KERNEL_VERSION }}_${{ github.event.inputs.board }}_${{ github.event.inputs.release }}_${{ env.COMPILE_STARTINGTIME }}
         artifacts: /workdir/*
         allowUpdates: true
         token: ${{ secrets.GH_TOKEN }}
