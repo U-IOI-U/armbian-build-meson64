@@ -12,15 +12,18 @@ on:
         description: 'armbian build device patches'
         default: 'meson64-current'
         required: true
-        type: string
+        type: choice
+        options:
+          - 'meson64-current'
+          - 'rockchip64-current'
       kversion:
         description: 'armbian build kernel version'
-        default: 'v6.1.11'
+        default: 'v6.1.63'
         required: true
         type: string
       branch:
         description: 'armbian build branch'
-        default: 'v23.02'
+        default: 'v23.11'
         required: true
         type: string
 
@@ -41,6 +44,12 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
 
+    - name: Set Jop Summary
+      run: |
+        echo "*patches*   : ${{ github.event.inputs.patches }}" >> $GITHUB_STEP_SUMMARY
+        echo "*kversion*  : ${{ github.event.inputs.kversion }}" >> $GITHUB_STEP_SUMMARY
+        echo "*branch*    : ${{ github.event.inputs.branch }}" >> $GITHUB_STEP_SUMMARY
+
     - name: Initialization environment
       env:
         DEBIAN_FRONTEND: noninteractive
@@ -57,20 +66,81 @@ jobs:
 
     - name: Build Armbian Dtb
       id: build
+      env:
+        CROSS_COMPILE: "aarch64-linux-gnu-"
+        ARCH: "arm64"
       run: |
-        git clone -b ${{ github.event.inputs.branch }} --depth=1 https://github.com/armbian/build.git armbian-build
-        git clone -b ${{ github.event.inputs.kversion }} --depth=1 https://kernel.googlesource.com/pub/scm/linux/kernel/git/stable/linux-stable linux-stable
-        cd linux-stable
-        bash ../scripts/apply_patch.sh ${{ github.event.inputs.patches }}
-        export CROSS_COMPILE="aarch64-linux-gnu-"
-        export ARCH="arm64"
+        git config --global init.defaultBranch dev
+        git config --global user.email "74693141+U-IOI-U@users.noreply.github.com"
+        git config --global user.name "U-IOI-U"
+
+        while [ true ]; do
+          SOURCE_LINK=""
+          if [ "${{ github.event.inputs.branch }}" = "v23.11" -a "${{ github.event.inputs.kversion }}" = "v6.1.63" -a "${{ github.event.inputs.patches }}" = "meson64-current" ]; then
+            SOURCE_LINK="https://github.com/U-IOI-U/armbian-build/releases/download/Armbian_v23.11_v6.1.63_odroidc2_jammy/linux_source_v23.11_v6.1.63.tar.gz"
+          fi
+          if [ "${{ github.event.inputs.branch }}" = "v23.11" -a "${{ github.event.inputs.kversion }}" = "v6.1.63" -a "${{ github.event.inputs.patches }}" = "rockchip64-current" ]; then
+            SOURCE_LINK="https://github.com/U-IOI-U/armbian-build/releases/download/Armbian_v23.11_v6.1.63_nanopi-r2s_jammy/linux_source_v23.11_v6.1.63.tar.gz"
+          fi
+          if [ "$SOURCE_LINK" != "" ]; then
+            SOURCE_FILE=`basename "$SOURCE_LINK"`
+            echo "Downloading [ $SOURCE_FILE <= $SOURCE_LINK ]"
+            wget -q -O "$SOURCE_FILE" "$SOURCE_LINK"
+            if [ $? = "0" ]; then
+              echo "Uncompression [ $SOURCE_FILE ]"
+              tar xf "$SOURCE_FILE"
+              SOURCE_FOLDERE="$(ls linux-kernel-worktree/ 2>/dev/null)"
+              if [ "$SOURCE_FOLDERE" != "" ]; then
+                mv "linux-kernel-worktree/$SOURCE_FOLDERE" linux-stable
+              fi
+              if [ -d "linux-stable" ]; then
+                echo "Repo Init."
+                cd linux-stable && rm -f .git && git init && git add . && git commit -m "init" >/dev/null && cd .. >/dev/null 2>&1
+                break
+              fi
+            fi
+          fi
+
+          echo "Git Clone https://github.com/armbian/build.git:${{ github.event.inputs.branch }}"
+          git clone -q -b ${{ github.event.inputs.branch }} --depth=1 https://github.com/armbian/build.git armbian-build
+
+          echo "Git Clone https://kernel.googlesource.com/pub/scm/linux/kernel/git/stable/linux-stable:${{ github.event.inputs.kversion }}"
+          git clone -q -b ${{ github.event.inputs.kversion }} --depth=1 https://kernel.googlesource.com/pub/scm/linux/kernel/git/stable/linux-stable linux-stable
+
+          cp armbian-build/config/kernel/linux-${{ github.event.inputs.patches }}.config linux-stable/.config
+          break
+        done
+        cd linux-stable && bash ../scripts/apply_patch.sh ${{ github.event.inputs.patches }}
+
         # make defconfig
-        cp ../armbian-build/config/kernel/linux-${{ github.event.inputs.patches }}.config .config
         make dtbs
-        cp arch/arm64/boot/dts/amlogic/meson-g12a-s905l3a-cm311.dtb arch/arm64/boot/dts/amlogic/overlay/meson-g12a-u200-cm311-1a.dtbo /workdir/
-        make clean
-        cd ../
-        # tar zcf /workdir/Armbian_kernel_source_${{ github.event.inputs.branch }}_${{ github.event.inputs.kversion }}_${{ github.event.inputs.patches }}.tar.gz linux-stable
+
+    - name: Copy Files
+      run: |
+        cd linux-stable
+        build_files=""
+        if [ "${{ github.event.inputs.patches }}" = "meson64-current" ]; then
+          build_files=" \
+          meson-g12a-s905l3a-cm311.dtb \
+          meson-g12a-s905l3a-e900v22c.dtb \
+          meson-g12a-s905l3a-m401a.dtb \
+          meson-g12a-u200-cm311-1a.dtbo \
+          meson-g12a-u200-cm311-1a-nowifi.dtbo \
+          meson-g12a-u200-cm311-1a-nosdcard.dtbo \
+          meson-gxl-s905d-phicomm-n1-new.dtb \
+          meson-gxl-s905d-phicomm-n1-thresh.dtb \
+          "
+        elif [ "${{ github.event.inputs.patches }}" = "rockchip64-current" ]; then
+          build_files=""
+        fi
+        for b_file in $build_files; do
+          for i in `find arch/arm64/boot/dts/ -name "$b_file" 2>/dev/null`; do
+            if [ -f "$i" ]; then
+              echo "Copy [ $i ]"
+              cp "$i" /workdir/
+            fi
+          done
+        done
 
     - name:  Upload Artifact
       uses: actions/upload-artifact@v4.1.0
