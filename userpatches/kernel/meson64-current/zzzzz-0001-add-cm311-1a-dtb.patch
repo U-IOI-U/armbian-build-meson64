@@ -1,19 +1,19 @@
-From c883a1dde0bc9750def8d6a67758dc972e371bb3 Mon Sep 17 00:00:00 2001
+From fa1947b19c711fe047379cdab4c3af1d5d24b22a Mon Sep 17 00:00:00 2001
 From: U-IOI-U <74693141+U-IOI-U@users.noreply.github.com>
-Date: Sat, 20 Jan 2024 20:09:21 +0800
-Subject: [PATCH] add cm311-1a
+Date: Mon, 22 Jan 2024 10:50:43 +0800
+Subject: [PATCH 1/4] add cm311-1a dtb
 
 ---
  arch/arm64/boot/dts/amlogic/Makefile          |   1 +
- .../dts/amlogic/meson-g12a-s905l3a-cm311.dts  | 165 ++++++++++++++++++
+ .../dts/amlogic/meson-g12a-s905l3a-cm311.dts  | 173 ++++++++++++++++++
  arch/arm64/boot/dts/amlogic/overlay/Makefile  |   1 +
- .../overlay/meson-g12a-u200-cm311-1a.dts      | 138 +++++++++++++++
- 4 files changed, 305 insertions(+)
+ .../overlay/meson-g12a-u200-cm311-1a.dts      | 138 ++++++++++++++
+ 4 files changed, 313 insertions(+)
  create mode 100644 arch/arm64/boot/dts/amlogic/meson-g12a-s905l3a-cm311.dts
  create mode 100644 arch/arm64/boot/dts/amlogic/overlay/meson-g12a-u200-cm311-1a.dts
 
 diff --git a/arch/arm64/boot/dts/amlogic/Makefile b/arch/arm64/boot/dts/amlogic/Makefile
-index ef383919f6ee..45d83c7ef7b3 100644
+index a81a4832d..f06b25fab 100644
 --- a/arch/arm64/boot/dts/amlogic/Makefile
 +++ b/arch/arm64/boot/dts/amlogic/Makefile
 @@ -8,6 +8,7 @@ dtb-$(CONFIG_ARCH_MESON) += meson-g12a-radxa-zero.dtb
@@ -21,15 +21,15 @@ index ef383919f6ee..45d83c7ef7b3 100644
  dtb-$(CONFIG_ARCH_MESON) += meson-g12a-u200.dtb
  dtb-$(CONFIG_ARCH_MESON) += meson-g12a-x96-max.dtb
 +dtb-$(CONFIG_ARCH_MESON) += meson-g12a-s905l3a-cm311.dtb
- dtb-$(CONFIG_ARCH_MESON) += meson-g12b-a311d-khadas-vim3.dtb
  dtb-$(CONFIG_ARCH_MESON) += meson-g12b-a311d-bananapi-m2s.dtb
- dtb-$(CONFIG_ARCH_MESON) += meson-g12b-gsking-x.dtb
+ dtb-$(CONFIG_ARCH_MESON) += meson-g12b-a311d-khadas-vim3.dtb
+ dtb-$(CONFIG_ARCH_MESON) += meson-g12b-bananapi-cm4-cm4io.dtb
 diff --git a/arch/arm64/boot/dts/amlogic/meson-g12a-s905l3a-cm311.dts b/arch/arm64/boot/dts/amlogic/meson-g12a-s905l3a-cm311.dts
 new file mode 100644
-index 000000000000..60e040cdf118
+index 000000000..1cbfb9ab3
 --- /dev/null
 +++ b/arch/arm64/boot/dts/amlogic/meson-g12a-s905l3a-cm311.dts
-@@ -0,0 +1,165 @@
+@@ -0,0 +1,173 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Copyright (c) 2018 Amlogic, Inc. All rights reserved.
@@ -195,21 +195,29 @@ index 000000000000..60e040cdf118
 +&internal_ephy  {
 +	max-speed = <100>;
 +};
++
++&ethmac {
++	/delete-property/ resets;
++	/delete-property/ reset-names;
++	phy-handle = <&internal_ephy>;
++	phy-mode = "rmii";
++	status = "okay";
++};
 diff --git a/arch/arm64/boot/dts/amlogic/overlay/Makefile b/arch/arm64/boot/dts/amlogic/overlay/Makefile
-index 9d5c727602d1..fbd152b42850 100644
+index 1662ecbce..beff797cb 100644
 --- a/arch/arm64/boot/dts/amlogic/overlay/Makefile
 +++ b/arch/arm64/boot/dts/amlogic/overlay/Makefile
-@@ -6,6 +6,7 @@ dtbo-$(CONFIG_ARCH_MESON) += \
- 	meson-uartC.dtbo \
- 	meson-w1-gpio.dtbo \
- 	meson-w1AB-gpio.dtbo \
+@@ -20,6 +20,7 @@ dtbo-$(CONFIG_ARCH_MESON) += \
+ 	meson-g12a-radxa-zero-uart-ao-b-on-gpioao-2-gpioao-3.dtbo \
+ 	meson-g12a-radxa-zero-uart-ao-b-on-gpioao-8-gpioao-9.dtbo \
+ 	meson-g12a-radxa-zero-uart-ee-c.dtbo \
 +	meson-g12a-u200-cm311-1a.dtbo \
- 	meson-g12-gxl-cma-pool-896MB.dtbo
- 
- scr-$(CONFIG_ARCH_MESON) += \
+ 	meson-g12b-bananapi-m2s-rtl8822cs.dtbo \
+ 	meson-g12b-odroid-n2-spi.dtbo \
+ 	meson-g12b-waveshare-cm4-io-base-usb.dtbo \
 diff --git a/arch/arm64/boot/dts/amlogic/overlay/meson-g12a-u200-cm311-1a.dts b/arch/arm64/boot/dts/amlogic/overlay/meson-g12a-u200-cm311-1a.dts
 new file mode 100644
-index 000000000000..663a5c25254b
+index 000000000..663a5c252
 --- /dev/null
 +++ b/arch/arm64/boot/dts/amlogic/overlay/meson-g12a-u200-cm311-1a.dts
 @@ -0,0 +1,138 @@
@@ -352,5 +360,5 @@ index 000000000000..663a5c25254b
 +	};
 +};
 -- 
-2.39.1
+2.27.0
 
