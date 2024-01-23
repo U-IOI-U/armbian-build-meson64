@@ -1,0 +1,89 @@
+# This is a basic workflow that is manually triggered
+
+name: Build Armbian dtb
+
+# Controls when the action will run. Workflow runs when manually triggered using the UI
+# or API.
+on:
+  workflow_dispatch:
+    # Inputs the workflow accepts.
+    inputs:
+      patches:
+        description: 'armbian build device patches'
+        default: 'meson64-current'
+        required: true
+        type: string
+      kversion:
+        description: 'armbian build kernel version'
+        default: 'v6.1.11'
+        required: true
+        type: string
+      branch:
+        description: 'armbian build branch'
+        default: 'v23.02'
+        required: true
+        type: string
+
+env:
+  TZ: Asia/Shanghai
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "greet"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-22.04
+    if: github.event.repository.owner.id == github.event.sender.id
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+    # Runs a single command using the runners shell
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Initialization environment
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
+        sudo -E apt-get -qq update
+        sudo -E apt-get -qq install -y $(curl -fsSL https://is.gd/depend_ubuntu2204_armbian)
+        sudo -E apt-get -qq autoremove --purge
+        sudo -E apt-get -qq clean
+        sudo timedatectl set-timezone "$TZ"
+        sudo mkdir -p /workdir
+        sudo chown $USER:$GROUPS /workdir
+        echo "COMPILE_STARTINGTIME=$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_ENV
+
+    - name: Build Armbian Dtb
+      id: build
+      run: |
+        git clone -b ${{ github.event.inputs.branch }} --depth=1 https://github.com/armbian/build.git armbian-build
+        git clone -b ${{ github.event.inputs.kversion }} --depth=1 https://kernel.googlesource.com/pub/scm/linux/kernel/git/stable/linux-stable linux-stable
+        cd linux-stable
+        bash ../scripts/apply_patch.sh ${{ github.event.inputs.patches }}
+        export CROSS_COMPILE="aarch64-linux-gnu-"
+        export ARCH="arm64"
+        # make defconfig
+        cp ../armbian-build/config/kernel/linux-${{ github.event.inputs.patches }}.config .config
+        make dtbs
+        cp arch/arm64/boot/dts/amlogic/meson-g12a-s905l3a-cm311.dtb arch/arm64/boot/dts/amlogic/overlay/meson-g12a-u200-cm311-1a.dtbo /workdir/
+        make clean
+        cd ../
+        # tar zcf /workdir/Armbian_kernel_source_${{ github.event.inputs.branch }}_${{ github.event.inputs.kversion }}_${{ github.event.inputs.patches }}.tar.gz linux-stable
+
+    - name:  Upload Artifact
+      uses: actions/upload-artifact@v4.1.0
+      with:
+        name: output
+        path: /workdir/*
+
+    - name: Upload file to Release
+      uses: ncipollo/release-action@main
+      with:
+        tag: Armbian_${{ github.event.inputs.branch }}_${{ github.event.inputs.kversion }}_${{ github.event.inputs.patches }}_${{ env.COMPILE_STARTINGTIME }}
+        artifacts: /workdir/*
+        allowUpdates: true
+        token: ${{ secrets.GH_TOKEN }}
+        body: |
+          This is Armbian dtb

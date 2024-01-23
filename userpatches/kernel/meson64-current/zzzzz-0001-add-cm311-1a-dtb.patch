@@ -1,0 +1,356 @@
+From c883a1dde0bc9750def8d6a67758dc972e371bb3 Mon Sep 17 00:00:00 2001
+From: U-IOI-U <74693141+U-IOI-U@users.noreply.github.com>
+Date: Sat, 20 Jan 2024 20:09:21 +0800
+Subject: [PATCH] add cm311-1a
+
+---
+ arch/arm64/boot/dts/amlogic/Makefile          |   1 +
+ .../dts/amlogic/meson-g12a-s905l3a-cm311.dts  | 165 ++++++++++++++++++
+ arch/arm64/boot/dts/amlogic/overlay/Makefile  |   1 +
+ .../overlay/meson-g12a-u200-cm311-1a.dts      | 138 +++++++++++++++
+ 4 files changed, 305 insertions(+)
+ create mode 100644 arch/arm64/boot/dts/amlogic/meson-g12a-s905l3a-cm311.dts
+ create mode 100644 arch/arm64/boot/dts/amlogic/overlay/meson-g12a-u200-cm311-1a.dts
+
+diff --git a/arch/arm64/boot/dts/amlogic/Makefile b/arch/arm64/boot/dts/amlogic/Makefile
+index ef383919f6ee..45d83c7ef7b3 100644
+--- a/arch/arm64/boot/dts/amlogic/Makefile
++++ b/arch/arm64/boot/dts/amlogic/Makefile
+@@ -8,6 +8,7 @@ dtb-$(CONFIG_ARCH_MESON) += meson-g12a-radxa-zero.dtb
+ dtb-$(CONFIG_ARCH_MESON) += meson-g12a-sei510.dtb
+ dtb-$(CONFIG_ARCH_MESON) += meson-g12a-u200.dtb
+ dtb-$(CONFIG_ARCH_MESON) += meson-g12a-x96-max.dtb
++dtb-$(CONFIG_ARCH_MESON) += meson-g12a-s905l3a-cm311.dtb
+ dtb-$(CONFIG_ARCH_MESON) += meson-g12b-a311d-khadas-vim3.dtb
+ dtb-$(CONFIG_ARCH_MESON) += meson-g12b-a311d-bananapi-m2s.dtb
+ dtb-$(CONFIG_ARCH_MESON) += meson-g12b-gsking-x.dtb
+diff --git a/arch/arm64/boot/dts/amlogic/meson-g12a-s905l3a-cm311.dts b/arch/arm64/boot/dts/amlogic/meson-g12a-s905l3a-cm311.dts
+new file mode 100644
+index 000000000000..60e040cdf118
+--- /dev/null
++++ b/arch/arm64/boot/dts/amlogic/meson-g12a-s905l3a-cm311.dts
+@@ -0,0 +1,165 @@
++// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
++/*
++ * Copyright (c) 2018 Amlogic, Inc. All rights reserved.
++ * Create by flippy
++ */
++
++/dts-v1/;
++
++#include "meson-g12a-u200.dts"
++
++/ {
++	compatible = "cm311,m401a,e900v22c", "amlogic,g12a";
++	model = "CM311-1a-YST";
++
++	aliases {
++		serial1 = &uart_A;
++	};
++
++	vddgpu: regulator-vddgpu {
++		compatible = "regulator-fixed";
++		regulator-name = "mali";
++		regulator-min-microvolt = <800000>;
++		regulator-max-microvolt = <800000>;
++		vin-supply = <&main_12v>;
++		regulator-boot-on;
++		regulator-always-on;
++	};
++
++	wifi32k: wifi32k {
++		compatible = "pwm-clock";
++		#clock-cells = <0>;
++		clock-frequency = <32768>;
++		pwms = <&pwm_ef 0 30518 0>; /* PWM_E at 32.768KHz */
++	};
++
++	sdio_pwrseq: sdio-pwrseq {
++		compatible = "mmc-pwrseq-simple";
++		reset-gpios = <&gpio GPIOX_6 GPIO_ACTIVE_LOW>;
++		clocks = <&wifi32k>;
++		clock-names = "ext_clock";
++	};
++
++	leds {
++		compatible = "gpio-leds";
++
++		power_led {
++			led_name = "power_led";
++			gpios = <&gpio_ao GPIOAO_11 GPIO_ACTIVE_LOW>;
++			default-state = "on";
++		};
++
++		net_led {
++			led_name = "net_led";
++			gpios = <&gpio_ao GPIOAO_9 GPIO_ACTIVE_LOW>;
++			default-state = "off";
++			linux,default-trigger = "0.0:00:link";
++		};
++
++		remote_led {
++			led_name = "remote_led";
++			gpios = <&gpio_ao GPIOAO_10 GPIO_ACTIVE_LOW>;
++			default-state = "off";
++			linux,default-trigger = "rc-feedback";
++		};
++	};
++
++	memory@0 {
++		device_type = "memory";
++		reg = <0x0 0x0 0x0 0x80000000>;
++	};
++};
++
++&uart_A {
++	status = "okay";
++	pinctrl-0 = <&uart_a_pins>, <&uart_a_cts_rts_pins>;
++	uart-has-rtscts;
++	pinctrl-names = "default";
++};
++
++&mali {
++	mali-supply=<&vddgpu>;
++};
++
++/* SDIO */
++&sd_emmc_a {
++	status = "okay";
++	pinctrl-0 = <&sdio_pins>;
++	pinctrl-1 = <&sdio_clk_gate_pins>;
++	pinctrl-names = "default", "clk-gate";
++	#address-cells = <1>;
++	#size-cells = <0>;
++
++	bus-width = <4>;
++	cap-sd-highspeed;
++	sd-uhs-sdr50;
++	max-frequency = <100000000>;
++
++	non-removable;
++	disable-wp;
++
++	/* WiFi firmware requires power to be kept while in suspend */
++	keep-power-in-suspend;
++
++	mmc-pwrseq = <&sdio_pwrseq>;
++
++	vmmc-supply = <&vddao_3v3>;
++	vqmmc-supply = <&vddao_1v8>;
++
++	wifi: wifi@1 {
++		reg = <1>;
++		compatible = "sprd,unisoc-wifi";
++	};
++};
++
++/* SD card */
++&sd_emmc_b {
++	status = "okay";
++	bus-width = <4>;
++	cap-sd-highspeed;
++	max-frequency = <50000000>;
++};
++
++/* eMMC */
++&sd_emmc_c {
++	status = "okay";
++	bus-width = <8>;
++	cap-mmc-highspeed;
++	mmc-ddr-1_8v;
++	mmc-hs200-1_8v;
++	max-frequency = <200000000>;
++};
++
++/* CPU Overclock */
++&cpu_opp_table {
++	opp-100000000 {
++		status = "disabled";
++	};
++
++	opp-250000000 {
++		status = "disabled";
++	};
++
++	opp-500000000 {
++		status = "disabled";
++	};
++
++	opp-667000000 {
++		status = "disabled";
++	};
++
++	opp-1908000000 {
++		opp-hz = /bits/ 64 <1908000000>;
++		opp-microvolt = <1001000>;
++	};
++
++	/* 2016mhz :  not test */
++	//opp-2016000000 {
++	//		opp-hz = /bits/ 64 <2016000000>;
++	//		opp-microvolt = <1021000>;
++	//};
++};
++
++&internal_ephy  {
++	max-speed = <100>;
++};
+diff --git a/arch/arm64/boot/dts/amlogic/overlay/Makefile b/arch/arm64/boot/dts/amlogic/overlay/Makefile
+index 9d5c727602d1..fbd152b42850 100644
+--- a/arch/arm64/boot/dts/amlogic/overlay/Makefile
++++ b/arch/arm64/boot/dts/amlogic/overlay/Makefile
+@@ -6,6 +6,7 @@ dtbo-$(CONFIG_ARCH_MESON) += \
+ 	meson-uartC.dtbo \
+ 	meson-w1-gpio.dtbo \
+ 	meson-w1AB-gpio.dtbo \
++	meson-g12a-u200-cm311-1a.dtbo \
+ 	meson-g12-gxl-cma-pool-896MB.dtbo
+ 
+ scr-$(CONFIG_ARCH_MESON) += \
+diff --git a/arch/arm64/boot/dts/amlogic/overlay/meson-g12a-u200-cm311-1a.dts b/arch/arm64/boot/dts/amlogic/overlay/meson-g12a-u200-cm311-1a.dts
+new file mode 100644
+index 000000000000..663a5c25254b
+--- /dev/null
++++ b/arch/arm64/boot/dts/amlogic/overlay/meson-g12a-u200-cm311-1a.dts
+@@ -0,0 +1,138 @@
++/dts-v1/;
++/plugin/;
++
++#include <dt-bindings/gpio/gpio.h>
++#include <dt-bindings/gpio/meson-g12a-gpio.h>
++
++/ {
++	compatible = "cm311,m401a,e900v22c", "amlogic,g12a";
++	model = "CM311-1a-YST";
++
++	fragment@0 {
++		target-path = "/opp-table";
++
++		__overlay__ {
++
++			opp-1908000000 {
++				opp-hz = /bits/ 64 <1908000000>;
++				opp-microvolt = <1001000>;
++			};
++		};
++	};
++
++	fragment@1 {
++		target-path = "/";
++
++		__overlay__ {
++
++			aliases {
++				serial1 = "/soc/bus@ffd00000/serial@24000";
++			};
++
++			wifi32k: wifi32k {
++				compatible = "pwm-clock";
++				#clock-cells = <0>;
++				clock-frequency = <32768>;
++				pwms = <&pwm_ef 0 30518 0>; /* PWM_E at 32.768KHz */
++			};
++
++			sdio_pwrseq: sdio-pwrseq {
++				compatible = "mmc-pwrseq-simple";
++				reset-gpios = <&gpio GPIOX_6 GPIO_ACTIVE_LOW>;
++				clocks = <&wifi32k>;
++				clock-names = "ext_clock";
++			};
++
++			leds {
++				compatible = "gpio-leds";
++
++				power_led {
++					led_name = "power_led";
++					gpios = <&gpio_ao GPIOAO_11 GPIO_ACTIVE_LOW>;
++					default-state = "on";
++				};
++
++				net_led {
++					led_name = "net_led";
++					gpios = <&gpio_ao GPIOAO_9 GPIO_ACTIVE_LOW>;
++					default-state = "off";
++					linux,default-trigger = "0.0:00:link";
++				};
++
++				remote_led {
++					led_name = "remote_led";
++					gpios = <&gpio_ao GPIOAO_10 GPIO_ACTIVE_LOW>;
++					default-state = "off";
++					linux,default-trigger = "rc-feedback";
++				};
++			};
++
++			memory@0 {
++				device_type = "memory";
++				reg = <0x0 0x0 0x0 0x80000000>;
++			};
++		};
++	};
++
++	fragment@2 {
++		target-path = "/soc/bus@ff600000/mdio-multiplexer@4c000/mdio@1/";
++
++		__overlay__ {
++
++			ethernet-phy@8 {
++				max-speed = <100>;
++			};
++		};
++	};
++
++	fragment@3 {
++		target-path = "/soc/bus@ffd00000/";
++
++		__overlay__ {
++
++			serial@24000 {
++				status = "okay";
++				pinctrl-0 = <&uart_a_pins>, <&uart_a_cts_rts_pins>;
++				uart-has-rtscts;
++				pinctrl-names = "default";
++			};
++		};
++	};
++
++	fragment@4 {
++		target-path = "/soc/";
++
++		__overlay__ {
++
++			sd@ffe03000 {
++				status = "okay";
++				pinctrl-0 = <&sdio_pins>;
++				pinctrl-1 = <&sdio_clk_gate_pins>;
++				pinctrl-names = "default", "clk-gate";
++				#address-cells = <1>;
++				#size-cells = <0>;
++
++				bus-width = <4>;
++				cap-sd-highspeed;
++				sd-uhs-sdr50;
++				max-frequency = <100000000>;
++
++				non-removable;
++				disable-wp;
++
++				/* WiFi firmware requires power to be kept while in suspend */
++				keep-power-in-suspend;
++
++				mmc-pwrseq = <&sdio_pwrseq>;
++
++				vmmc-supply = <&vddao_3v3>;
++				vqmmc-supply = <&vddao_1v8>;
++
++				wifi: wifi@1 {
++					reg = <1>;
++					compatible = "sprd,unisoc-wifi";
++				};
++			};
++		};
++	};
++};
+-- 
+2.39.1
+
