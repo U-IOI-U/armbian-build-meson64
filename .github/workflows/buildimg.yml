@@ -56,11 +56,11 @@ jobs:
 
     - name: Set Jop Summary
       run: |
-        echo "*board*      : ${{ github.event.inputs.board }}" >> $GITHUB_STEP_SUMMARY
-        echo "*release*    : ${{ github.event.inputs.release }}" >> $GITHUB_STEP_SUMMARY
-        echo "*branch*     : ${{ github.event.inputs.branch }}" >> $GITHUB_STEP_SUMMARY
-        echo "*userkpatch* : ${{ github.event.inputs.userkpatch }}" >> $GITHUB_STEP_SUMMARY
-        echo "*onlykernel* : ${{ github.event.inputs.onlykernel }}" >> $GITHUB_STEP_SUMMARY
+        echo "**board**      : ${{ github.event.inputs.board }}" >> $GITHUB_STEP_SUMMARY
+        echo "**release**    : ${{ github.event.inputs.release }}" >> $GITHUB_STEP_SUMMARY
+        echo "**branch**     : ${{ github.event.inputs.branch }}" >> $GITHUB_STEP_SUMMARY
+        echo "**userkpatch** : ${{ github.event.inputs.userkpatch }}" >> $GITHUB_STEP_SUMMARY
+        echo "**onlykernel** : ${{ github.event.inputs.onlykernel }}" >> $GITHUB_STEP_SUMMARY
 
     - name: Initialization environment
       env:
