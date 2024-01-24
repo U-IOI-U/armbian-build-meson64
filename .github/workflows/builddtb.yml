@@ -46,9 +46,9 @@ jobs:
 
     - name: Set Jop Summary
       run: |
-        echo "*patches*   : ${{ github.event.inputs.patches }}" >> $GITHUB_STEP_SUMMARY
-        echo "*kversion*  : ${{ github.event.inputs.kversion }}" >> $GITHUB_STEP_SUMMARY
-        echo "*branch*    : ${{ github.event.inputs.branch }}" >> $GITHUB_STEP_SUMMARY
+        echo "**patches**   : ${{ github.event.inputs.patches }}" >> $GITHUB_STEP_SUMMARY
+        echo "**kversion**  : ${{ github.event.inputs.kversion }}" >> $GITHUB_STEP_SUMMARY
+        echo "**branch**    : ${{ github.event.inputs.branch }}" >> $GITHUB_STEP_SUMMARY
 
     - name: Initialization environment
       env:
@@ -77,10 +77,10 @@ jobs:
         while [ true ]; do
           SOURCE_LINK=""
           if [ "${{ github.event.inputs.branch }}" = "v23.11" -a "${{ github.event.inputs.kversion }}" = "v6.1.63" -a "${{ github.event.inputs.patches }}" = "meson64-current" ]; then
-            SOURCE_LINK="https://github.com/U-IOI-U/armbian-build/releases/download/Armbian_v23.11_v6.1.63_odroidc2_jammy/linux_source_v23.11_v6.1.63.tar.gz"
+            SOURCE_LINK="https://github.com/U-IOI-U/armbian-build-meson64/releases/download/Armbian_v23.11_v6.1.63_odroidc2_jammy/linux_source_v23.11_v6.1.63.tar.gz"
           fi
           if [ "${{ github.event.inputs.branch }}" = "v23.11" -a "${{ github.event.inputs.kversion }}" = "v6.1.63" -a "${{ github.event.inputs.patches }}" = "rockchip64-current" ]; then
-            SOURCE_LINK="https://github.com/U-IOI-U/armbian-build/releases/download/Armbian_v23.11_v6.1.63_nanopi-r2s_jammy/linux_source_v23.11_v6.1.63.tar.gz"
+            SOURCE_LINK="https://github.com/U-IOI-U/armbian-build-meson64/releases/download/Armbian_v23.11_v6.1.63_nanopi-r2s_jammy/linux_source_v23.11_v6.1.63.tar.gz"
           fi
           if [ "$SOURCE_LINK" != "" ]; then
             SOURCE_FILE=`basename "$SOURCE_LINK"`
@@ -127,6 +127,7 @@ jobs:
           meson-g12a-u200-cm311-1a.dtbo \
           meson-g12a-u200-cm311-1a-nowifi.dtbo \
           meson-g12a-u200-cm311-1a-nosdcard.dtbo \
+          meson-gxbb-p201-q5.dtb \
           meson-gxl-s905d-phicomm-n1-new.dtb \
           meson-gxl-s905d-phicomm-n1-thresh.dtb \
           "
@@ -152,6 +153,7 @@ jobs:
       uses: ncipollo/release-action@main
       with:
         tag: Armbian_${{ github.event.inputs.branch }}_${{ github.event.inputs.kversion }}_${{ github.event.inputs.patches }}_${{ env.COMPILE_STARTINGTIME }}
+        makeLatest: true
         artifacts: /workdir/*
         allowUpdates: true
         token: ${{ secrets.GH_TOKEN }}
