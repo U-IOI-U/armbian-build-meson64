@@ -18,12 +18,12 @@ on:
           - 'rockchip64-current'
       kversion:
         description: 'armbian build kernel version'
-        default: 'v6.1.63'
+        default: 'v6.6.20'
         required: true
         type: string
       branch:
         description: 'armbian build branch'
-        default: 'v23.11'
+        default: 'v24.02'
         required: true
         type: string
 
@@ -81,6 +81,12 @@ jobs:
           fi
           if [ "${{ github.event.inputs.branch }}" = "v23.11" -a "${{ github.event.inputs.kversion }}" = "v6.1.63" -a "${{ github.event.inputs.patches }}" = "rockchip64-current" ]; then
             SOURCE_LINK="https://github.com/U-IOI-U/armbian-build-meson64/releases/download/Armbian_v23.11_v6.1.63_nanopi-r2s_jammy/linux_source_v23.11_v6.1.63.tar.gz"
+          fi
+          if [ "${{ github.event.inputs.branch }}" = "v24.02" -a "${{ github.event.inputs.kversion }}" = "v6.6.20" -a "${{ github.event.inputs.patches }}" = "meson64-current" ]; then
+            SOURCE_LINK="https://github.com/U-IOI-U/armbian-build-meson64/releases/download/Armbian_v24.02_v6.6.20_odroidc2_jammy/linux_source_v24.02_v6.6.20.tar.gz"
+          fi
+          if [ "${{ github.event.inputs.branch }}" = "v24.02" -a "${{ github.event.inputs.kversion }}" = "v6.6.20" -a "${{ github.event.inputs.patches }}" = "rockchip64-current" ]; then
+            SOURCE_LINK="https://github.com/U-IOI-U/armbian-build-meson64/releases/download/Armbian_v24.02_v6.6.20_nanopi-r2s_jammy/linux_source_v24.02_v6.6.20.tar.gz"
           fi
           if [ "$SOURCE_LINK" != "" ]; then
             SOURCE_FILE=`basename "$SOURCE_LINK"`

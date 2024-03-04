@@ -23,7 +23,7 @@ index a81a4832d..f06b25fab 100644
 +dtb-$(CONFIG_ARCH_MESON) += meson-g12a-s905l3a-cm311.dtb
  dtb-$(CONFIG_ARCH_MESON) += meson-g12b-a311d-bananapi-m2s.dtb
  dtb-$(CONFIG_ARCH_MESON) += meson-g12b-a311d-khadas-vim3.dtb
- dtb-$(CONFIG_ARCH_MESON) += meson-g12b-bananapi-cm4-cm4io.dtb
+ dtb-$(CONFIG_ARCH_MESON) += meson-g12b-a311d-khadas-vim3-spidev.dtb
 diff --git a/arch/arm64/boot/dts/amlogic/meson-g12a-s905l3a-cm311.dts b/arch/arm64/boot/dts/amlogic/meson-g12a-s905l3a-cm311.dts
 new file mode 100644
 index 000000000..1cbfb9ab3
@@ -212,9 +212,9 @@ index 1662ecbce..beff797cb 100644
  	meson-g12a-radxa-zero-uart-ao-b-on-gpioao-8-gpioao-9.dtbo \
  	meson-g12a-radxa-zero-uart-ee-c.dtbo \
 +	meson-g12a-u200-cm311-1a.dtbo \
+ 	meson-g12b-bananapi-cm4-pwm-gpioh-5-fan.dtbo \
  	meson-g12b-bananapi-m2s-rtl8822cs.dtbo \
  	meson-g12b-odroid-n2-spi.dtbo \
- 	meson-g12b-waveshare-cm4-io-base-usb.dtbo \
 diff --git a/arch/arm64/boot/dts/amlogic/overlay/meson-g12a-u200-cm311-1a.dts b/arch/arm64/boot/dts/amlogic/overlay/meson-g12a-u200-cm311-1a.dts
 new file mode 100644
 index 000000000..663a5c252

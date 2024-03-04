@@ -21,9 +21,9 @@ index beff797cb..b68d306ae 100644
  	meson-g12a-u200-cm311-1a.dtbo \
 +	meson-g12a-u200-cm311-1a-nosdcard.dtbo \
 +	meson-g12a-u200-cm311-1a-nowifi.dtbo \
+ 	meson-g12b-bananapi-cm4-pwm-gpioh-5-fan.dtbo \
  	meson-g12b-bananapi-m2s-rtl8822cs.dtbo \
  	meson-g12b-odroid-n2-spi.dtbo \
- 	meson-g12b-waveshare-cm4-io-base-usb.dtbo \
 diff --git a/arch/arm64/boot/dts/amlogic/overlay/meson-g12a-u200-cm311-1a-nosdcard.dts b/arch/arm64/boot/dts/amlogic/overlay/meson-g12a-u200-cm311-1a-nosdcard.dts
 new file mode 100644
 index 000000000..be80a0803

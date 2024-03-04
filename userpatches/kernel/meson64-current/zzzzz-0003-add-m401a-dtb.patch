@@ -20,7 +20,7 @@ index b57eaca4d..643315836 100644
 +dtb-$(CONFIG_ARCH_MESON) += meson-g12a-s905l3a-m401a.dtb
  dtb-$(CONFIG_ARCH_MESON) += meson-g12b-a311d-bananapi-m2s.dtb
  dtb-$(CONFIG_ARCH_MESON) += meson-g12b-a311d-khadas-vim3.dtb
- dtb-$(CONFIG_ARCH_MESON) += meson-g12b-bananapi-cm4-cm4io.dtb
+ dtb-$(CONFIG_ARCH_MESON) += meson-g12b-a311d-khadas-vim3-spidev.dtb
 diff --git a/arch/arm64/boot/dts/amlogic/meson-g12a-s905l3a-m401a.dts b/arch/arm64/boot/dts/amlogic/meson-g12a-s905l3a-m401a.dts
 new file mode 100644
 index 000000000..a538d0246
