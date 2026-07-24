@@ -18,12 +18,12 @@ on:
           - 'nanopi-r2s'
       release:
         description: 'armbian build release'
-        default: 'jammy'
+        default: 'resolute'
         required: true
         type: string
       branch:
         description: 'armbian build branch'
-        default: 'v25.02'
+        default: 'v26.05'
         required: true
         type: string
       userkpatch:
